@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+    <title>STFGAMES</title>
+
+</head>
+
+<body>
+
+
+<div class="container">
+
+    <h1 style="padding-top: 60px;">Robot Fostena Game</h1>
+
+    <div id="uploadArea" style="display: block;">
+        <label for="numFig">Ingresa el número de figuras</label>
+        <input id = "numFig" type="number" placeholder="Número de figuras">
+
+        <label for="cantMin">Ingresa la cantidad mínima de cubos para ganar</label>
+        <input id = "cantMin" type="number" placeholder="Cantidad">
+
+        <button id="param" class="btn btn-success">Ingresar parámetros</button>
+    </div>
+
+    <div id="areaCustomFig" style="align-items: center; display: flex" >
+    </div>
+
+    <button id="saveCustom" class="btn btn-success">Empezar</button>
+
+
+
+</div>
+
+
+<script>
+
+   document.getElementById('param').addEventListener('click',firstParameters);
+   document.getElementById('saveCustom').addEventListener('click',startGame);
+
+   let customFigList = [];
+
+
+    function firstParameters(){
+        const numFig = document.getElementById('numFig').value;
+        const canMin = document.getElementById('cantMin').value;
+        const uploadArea = document.getElementById('uploadArea');
+
+        generarCuadros(numFig);
+        uploadArea.style.display = 'none';
+    }
+
+    function generarCuadros(numFig){
+
+        const areaCustomFig = document.getElementById('areaCustomFig');
+        areaCustomFig.innerHTML = '';
+
+        for (let i = 0; i < numFig; i++){
+            const customFigItem = document.createElement('div');
+            customFigItem.style.margin= '3px';
+            customFigItem.classList.add('sub-board');
+            customFigItem.innerHTML = '';
+
+            for (let fila = 0; fila < 3; fila++){
+                for( let columna = 0; columna < 3; columna ++){
+                    const celda = document.createElement('div');
+                    celda.classList.add('cell');
+                    celda.classList.add('blue');
+                    customFigItem.appendChild(celda);
+
+                }
+
+            }
+            areaCustomFig.appendChild(customFigItem);
+
+
+        }
+
+    }
+
+
+    function mostrarCampoSubir(){
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.style.display = 'block';
+    }
+
+    function ocultarBotonesConfig(){
+        const uploadArea = document.getElementById('uploadArea');
+        const subir = document.getElementById('subir');
+        uploadArea.style.display = 'none';
+        subir.style.display = 'none';
+    }
+
+    function mostrarOcultarObstaculos(){
+
+        document.querySelectorAll('.monster, .black').forEach(celda => {
+            celda.classList.toggle('hidden',botonObstaculosVisible)
+        });
+
+        botonObstaculosVisible = !botonObstaculosVisible;
+        document.getElementById('toggle-obstacles').textContent = botonObstaculosVisible ? 'Ocultar obstáculos' : 'Mostrar obstáculos';
+    }
+
+    function iniciarJuego(){
+
+        const mapInput = document.getElementById('mapa').value;
+
+        const [dataBoard, customData] = mapInput.trim().split('\n\n');
+
+        mapa = dataBoard.split('\n').map(row => row.split(''));
+
+        const custom = customData.split('\n').reduce((acc, line) => {
+            const [param, value] = line.split(':');
+            acc[param] = value;
+            return acc;
+        }, {})
+
+        renderBoard(custom);
+        ocultarBotonesConfig();
+
+        const botonMostrarOcultar = document.getElementById('toggle-obstacles');
+        botonMostrarOcultar.style.display = 'block';
+
+        // Inicia la función para leer los movimientos del robot
+        document.addEventListener('keydown', handleKeyPress);
+
+
+    }
+
+    function renderBoard(custom){
+
+        const board = document.getElementById('game-board');
+        board.innerHTML = '';
+
+        for (let fila = 0; fila < mapa.length; fila++){
+            for( let columna = 0; columna < mapa[fila].length; columna ++){
+                const celda = document.createElement('div');
+                celda.classList.add('cell');
+
+                switch (mapa[fila][columna]){
+
+                    case 'I':
+                        celda.classList.add('yellow');
+                        robotPosicion = {fila:fila,columna:columna};
+                        celda.id = 'robot';
+                        break;
+                    case 'F':
+                        celda.classList.add('green');
+                        break;
+
+                    case 'S':
+                    case 'C':
+
+                    case 'P':
+                        celda.classList.add('monster');
+                        celda.classList.add('hidden');
+                        celda.style.backgroundImage = `url('${custom[mapa[fila][columna]].split(' ')[0]}')`;
+                        break;
+                    case 'A':
+                        celda.classList.add('black');
+                        celda.classList.add('hidden');
+                        break;
+                    case 'O':
+                        celda.classList.add('blue');
+                        break;
+
+                }
+
+                board.appendChild(celda);
+
+            }
+
+        }
+
+    }
+
+    function handleKeyPress(event){
+        switch (event.key) {
+            case 'ArrowUp':
+                moveRobot('up');
+                break;
+            case 'ArrowDown':
+                moveRobot('down');
+                break;
+            case 'ArrowLeft':
+                moveRobot('left');
+                break;
+            case 'ArrowRight':
+                moveRobot('right');
+                break;
+        }
+
+    }
+
+    function moveRobot(dir){
+        const newPos = { ...robotPosicion };
+
+        if(dir === 'up') newPos.fila -= 1;
+        if(dir === 'down') newPos.fila += 1;
+        if(dir === 'left') newPos.columna -= 1;
+        if(dir === 'right') newPos.columna += 1;
+
+        if (newPos.fila < 0 || newPos.fila >= mapa.length || newPos.columna < 0 || newPos.columna >= mapa[0].length) return;
+
+        const nextCell = mapa[newPos.fila][newPos.columna];
+        handleCell(nextCell, newPos, dir);
+    }
+    // Ver que hacer con lo que hay en la siguiente casilla
+    function handleCell(cell, newPos, dir) {
+
+        switch (cell) {
+            case 'O':
+            case 'F':
+                updateRobotPosition(newPos);
+                if (cell === 'F') alert("El robot está durmiendo en sociales");
+                break;
+            case 'S':
+                Suplantacion(newPos,dir)
+                break;
+            case 'C':
+                break;
+            case 'P':
+                break;
+            case 'A':
+                break;
+        }
+
+    }
+
+
+    function updateRobotPosition(newPos) {
+        document.getElementById('robot').id = '';
+        robotPosicion = newPos;
+        const newRobotCell = document.querySelector(`#game-board .cell:nth-child(${newPos.fila * 11 + newPos.columna + 1})`);
+        newRobotCell.id = 'robot';
+    }
+
+
+
+    function Suplantacion(pos, dir) {
+
+        const cell = document.querySelector(`#game-board .cell:nth-child(${pos.fila * 11 + pos.columna + 1})`);
+        cell.classList.remove('hidden');
+
+        let newPos = { ...pos };
+
+        switch (dir) {
+            case 'up':
+                newPos.fila = mapa.length - 1;
+                break;
+            case 'down':
+                newPos.fila = 0;
+                break;
+            case 'left':
+                newPos.columna = mapa[0].length - 1;
+                break;
+            case 'right':
+                newPos.columna = 0;
+                break;
+        }
+
+        updateRobotPosition(newPos);
+        handleCell(nextCell, newPos, dir);
+    }
+
+
+</script>
+</body>
