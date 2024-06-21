@@ -29,9 +29,10 @@
     <div id="areaCustomFig" style="align-items: center; display: flex" >
     </div>
 
-    <button id="saveCustom" class="btn btn-success">Empezar</button>
+    <button id="saveCustom" class="btn btn-success" style="display: none">Empezar</button>
 
 
+    <div id="game-board"></div>
 
 </div>
 
@@ -41,6 +42,9 @@
    document.getElementById('param').addEventListener('click',firstParameters);
    document.getElementById('saveCustom').addEventListener('click',startGame);
 
+
+
+   let mapa = [];
    let customFigList = [];
 
 
@@ -51,7 +55,13 @@
 
         generarCuadros(numFig);
         uploadArea.style.display = 'none';
+
+        //guardarCuadros(); Tengo un error con esta función (rellena todos los cuadros en negro automáticamente)
+
+
+
     }
+
 
     function generarCuadros(numFig){
 
@@ -64,207 +74,75 @@
             customFigItem.classList.add('sub-board');
             customFigItem.innerHTML = '';
 
+
+            const returnedArrayRow = [];
             for (let fila = 0; fila < 3; fila++){
+                const returnedArrayColumn = [];
                 for( let columna = 0; columna < 3; columna ++){
                     const celda = document.createElement('div');
                     celda.classList.add('cell');
                     celda.classList.add('blue');
+                    celda.setAttribute('id',`${i}${fila}${columna}`)
                     customFigItem.appendChild(celda);
-
+                    returnedArrayColumn[columna] = 0;
                 }
-
+                returnedArrayRow[fila] = returnedArrayColumn;
             }
             areaCustomFig.appendChild(customFigItem);
-
-
-        }
-
-    }
-
-
-    function mostrarCampoSubir(){
-        const uploadArea = document.getElementById('uploadArea');
-        uploadArea.style.display = 'block';
-    }
-
-    function ocultarBotonesConfig(){
-        const uploadArea = document.getElementById('uploadArea');
-        const subir = document.getElementById('subir');
-        uploadArea.style.display = 'none';
-        subir.style.display = 'none';
-    }
-
-    function mostrarOcultarObstaculos(){
-
-        document.querySelectorAll('.monster, .black').forEach(celda => {
-            celda.classList.toggle('hidden',botonObstaculosVisible)
-        });
-
-        botonObstaculosVisible = !botonObstaculosVisible;
-        document.getElementById('toggle-obstacles').textContent = botonObstaculosVisible ? 'Ocultar obstáculos' : 'Mostrar obstáculos';
-    }
-
-    function iniciarJuego(){
-
-        const mapInput = document.getElementById('mapa').value;
-
-        const [dataBoard, customData] = mapInput.trim().split('\n\n');
-
-        mapa = dataBoard.split('\n').map(row => row.split(''));
-
-        const custom = customData.split('\n').reduce((acc, line) => {
-            const [param, value] = line.split(':');
-            acc[param] = value;
-            return acc;
-        }, {})
-
-        renderBoard(custom);
-        ocultarBotonesConfig();
-
-        const botonMostrarOcultar = document.getElementById('toggle-obstacles');
-        botonMostrarOcultar.style.display = 'block';
-
-        // Inicia la función para leer los movimientos del robot
-        document.addEventListener('keydown', handleKeyPress);
-
-
-    }
-
-    function renderBoard(custom){
-
-        const board = document.getElementById('game-board');
-        board.innerHTML = '';
-
-        for (let fila = 0; fila < mapa.length; fila++){
-            for( let columna = 0; columna < mapa[fila].length; columna ++){
-                const celda = document.createElement('div');
-                celda.classList.add('cell');
-
-                switch (mapa[fila][columna]){
-
-                    case 'I':
-                        celda.classList.add('yellow');
-                        robotPosicion = {fila:fila,columna:columna};
-                        celda.id = 'robot';
-                        break;
-                    case 'F':
-                        celda.classList.add('green');
-                        break;
-
-                    case 'S':
-                    case 'C':
-
-                    case 'P':
-                        celda.classList.add('monster');
-                        celda.classList.add('hidden');
-                        celda.style.backgroundImage = `url('${custom[mapa[fila][columna]].split(' ')[0]}')`;
-                        break;
-                    case 'A':
-                        celda.classList.add('black');
-                        celda.classList.add('hidden');
-                        break;
-                    case 'O':
-                        celda.classList.add('blue');
-                        break;
-
-                }
-
-                board.appendChild(celda);
-
-            }
+            customFigList[i] = returnedArrayRow;
 
         }
 
-    }
-
-    function handleKeyPress(event){
-        switch (event.key) {
-            case 'ArrowUp':
-                moveRobot('up');
-                break;
-            case 'ArrowDown':
-                moveRobot('down');
-                break;
-            case 'ArrowLeft':
-                moveRobot('left');
-                break;
-            case 'ArrowRight':
-                moveRobot('right');
-                break;
-        }
+        const botonEmpezar =  document.getElementById('saveCustom');
+        botonEmpezar.style.display = 'block';
 
     }
 
-    function moveRobot(dir){
-        const newPos = { ...robotPosicion };
+   function guardarCuadros(){
 
-        if(dir === 'up') newPos.fila -= 1;
-        if(dir === 'down') newPos.fila += 1;
-        if(dir === 'left') newPos.columna -= 1;
-        if(dir === 'right') newPos.columna += 1;
+       for (let i = 0; i < customFigList.length; i++){
+           for (let fila = 0; fila < 3; fila++){
+               for( let columna = 0; columna < 3; columna ++){
+                   document.getElementById(`${i}${fila}${columna}`).addEventListener('click',changeBlack(i,fila,columna));
+               }
+           }
 
-        if (newPos.fila < 0 || newPos.fila >= mapa.length || newPos.columna < 0 || newPos.columna >= mapa[0].length) return;
+       }
 
-        const nextCell = mapa[newPos.fila][newPos.columna];
-        handleCell(nextCell, newPos, dir);
-    }
-    // Ver que hacer con lo que hay en la siguiente casilla
-    function handleCell(cell, newPos, dir) {
+   }
 
-        switch (cell) {
-            case 'O':
-            case 'F':
-                updateRobotPosition(newPos);
-                if (cell === 'F') alert("El robot está durmiendo en sociales");
-                break;
-            case 'S':
-                Suplantacion(newPos,dir)
-                break;
-            case 'C':
-                break;
-            case 'P':
-                break;
-            case 'A':
-                break;
-        }
-
+    function changeBlack(i,fila,columna){
+        const cell = document.getElementById(`${i}${fila}${columna}`);
+        cell.className = 'black';
+        console.log('cambiando');
+        customFigList[i][fila][columna] = 1;
     }
 
 
-    function updateRobotPosition(newPos) {
-        document.getElementById('robot').id = '';
-        robotPosicion = newPos;
-        const newRobotCell = document.querySelector(`#game-board .cell:nth-child(${newPos.fila * 11 + newPos.columna + 1})`);
-        newRobotCell.id = 'robot';
+    function startGame(){
+        const botonEmpezar =  document.getElementById('saveCustom');
+
+        renderBoard();
+        botonEmpezar.style.display = 'none';
     }
 
+   function renderBoard(){
 
+       const board = document.getElementById('game-board');
+       board.innerHTML = '';
 
-    function Suplantacion(pos, dir) {
+       for (let fila = 0; fila < 12; fila++){
+           for( let columna = 0; columna < 12; columna ++){
+               const celda = document.createElement('div');
+               celda.classList.add('cell');
+               celda.classList.add('blue');
+               board.appendChild(celda);
 
-        const cell = document.querySelector(`#game-board .cell:nth-child(${pos.fila * 11 + pos.columna + 1})`);
-        cell.classList.remove('hidden');
+           }
 
-        let newPos = { ...pos };
+       }
 
-        switch (dir) {
-            case 'up':
-                newPos.fila = mapa.length - 1;
-                break;
-            case 'down':
-                newPos.fila = 0;
-                break;
-            case 'left':
-                newPos.columna = mapa[0].length - 1;
-                break;
-            case 'right':
-                newPos.columna = 0;
-                break;
-        }
-
-        updateRobotPosition(newPos);
-        handleCell(nextCell, newPos, dir);
-    }
+   }
 
 
 </script>
